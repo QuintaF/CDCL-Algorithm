@@ -23,10 +23,11 @@ def cdcl_procedure(clauses, literals):
     learned_clauses = []
     trail_level = 0                             # number of decisions
     trail = []                                  # tuples (implied literal, justification)
-    truth_values = {lit:None for lit in literals}   # truth values for each literal
-    
     state(trail, clauses)
- 
+
+    # Truth values and VSIDS initialization
+    truth_values = {lit:[None, 0] for lit in literals}
+
     # watch 2 literals for each clause(if possible)
     for clause in clauses:
         watched = 0
@@ -42,18 +43,19 @@ def cdcl_procedure(clauses, literals):
             if watched == 2:
                 break;
     
+    # CDCL procedure: start
     clause = check_propagation(clauses, truth_values)
     while True:
         conflict = False
         propagated = False
 
-        #propagation
+        #CDCL procedure: propagation
         while clause is not None:
             propagated = True
 
             # implied literal becomes 1(True)
             implied_literal = clauses[clause][2][0]
-            truth_values[implied_literal] = 1
+            truth_values[implied_literal][0] = 1
 
             if '¬' in implied_literal:
                 negated = implied_literal[1]
@@ -62,7 +64,7 @@ def cdcl_procedure(clauses, literals):
                 
             # if negation of the implied_literal exists set it to 0(False)
             if negated in truth_values.keys():
-                truth_values[negated] = 0
+                truth_values[negated][0] = 0
 
             reason = clauses[clause][0]
             trail.append((clauses[clause][2][0], reason))    # (implied_literal, reason)
@@ -79,11 +81,12 @@ def cdcl_procedure(clauses, literals):
             clauses = cc
             clause = check_propagation(clauses, truth_values)
 
+        #CDCL procedure: decision
         if not propagated:
             lit = ''
             for lit in truth_values.keys():
-                if truth_values[lit] == None:
-                    truth_values[lit] = 1
+                if truth_values[lit][0] == None:
+                    truth_values[lit][0] = 1
                     
                     if '¬' in lit:
                         negated = lit[1]
@@ -91,7 +94,7 @@ def cdcl_procedure(clauses, literals):
                         negated = '¬' + lit
 
                     if negated in truth_values.keys():
-                        truth_values[negated] = 0
+                        truth_values[negated][0] = 0
                         conflict, cc = check_conflict(clauses, negated, truth_values)
 
                     if conflict:
@@ -103,14 +106,27 @@ def cdcl_procedure(clauses, literals):
             state(trail, clauses, learned_clauses = learned_clauses)
             trail_level += 1
 
-        #decision
-            #TODO: if not propagation do this, else skip to conflict check
-        # Use VSDIS
-            # L_sum = #times L appears in the learned clauses
-            # Decaying sum:
-            #   - multiply sum by aplha in (0,1)
-            #   - increment bump K to add to the sum(baseic k +=1, recent wights more than older)
-        #trail_level += 1 
+            # VSIDS decision
+            max_score = max(truth_values.)
+            candidates = [var for var, score in self.scores.items() if score == max_score]
+            return random.choice(candidates)
+        
+            # Use VSDIS
+                # L_sum = #times L appears in the learned clauses
+                # Decaying sum:
+                #   - multiply sum by aplha in (0,1)
+                #   - increment bump K to add to the sum(baseic k +=1, recent weights more than older)
+            #trail_level += 1 
+                # WHEN TO INCREMENT?
+                def bump(self, variable):
+                    self.scores[variable] += 1
+
+                #WHEN TO DECAY ?
+                def decay(self, factor):
+                    for var in self.variables:
+                        self.scores[var] *= factor
+
+
 
         if conflict:
             print(' ⇒ conflict ⇒ ', end='')
@@ -169,9 +185,9 @@ def cdcl_procedure(clauses, literals):
                 else:
                     negated = '¬' + literal
                 
-                truth_values[literal] = None
+                truth_values[literal][0] = None
                 if negated in truth_values.keys():
-                    truth_values[negated] = None
+                    truth_values[negated][0] = None
                 
             trail_level -= 1
 
@@ -179,7 +195,7 @@ def cdcl_procedure(clauses, literals):
             CHECK IF NEEDED
             if len(learn) == 1 or len(learn) == 2:
                 trail.append((learn, learn))
-                truth_values[learn] = 1
+                truth_values[learn][0] = 1
 
                 if '¬' in learn:
                     negated = learn[1]
@@ -187,7 +203,7 @@ def cdcl_procedure(clauses, literals):
                     negated = '¬' + learn
 
                 if negated in truth_values.keys():
-                    truth_values[negated] = 0
+                    truth_values[negated][0] = 0
 
 
             print(' ⇒ backjump ⇒ ', end='')
@@ -219,7 +235,7 @@ def check_propagation(clauses, truth_values):
     
     for idx, clause in enumerate(clauses):
         if clause[2][1] is None:
-            if truth_values[clause[2][0]] is None:
+            if truth_values[clause[2][0]][0] is None:
                 #implied literal
                 return idx
     
@@ -271,10 +287,10 @@ def search_watched_literal(clause, truth_values):
         for idx,char in enumerate(clause[0]):
             if char.isalpha():
                 if clause[0][idx-1] == '¬':
-                    if truth_values['¬'+char] != 0 and '¬'+char not in watched:
+                    if truth_values['¬'+char][0] != 0 and '¬'+char not in watched:
                         return '¬'+char
                 else:
-                    if truth_values[char] != 0 and char not in watched:
+                    if truth_values[char][0] != 0 and char not in watched:
                         return char
         
         return None
@@ -283,7 +299,7 @@ def search_watched_literal(clause, truth_values):
     for idx, literal in enumerate(watched):
         if literal is None:
             watched[idx] = search()
-        elif truth_values[literal] == 0:
+        elif truth_values[literal][0] == 0:
             watched[idx] = search()
 
     if watched[0] is None:
