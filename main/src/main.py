@@ -12,39 +12,31 @@ from cdcl import cdcl_procedure as cdcl
 
 def getLines():
     '''
-    Reads every line from the text file containing the clauses(be sure to have them line separated)
-    and removes any space from the lines to simplify string control
+    reads every line from the text file containing the clauses(be sure to have them line separated)
+    checks that the clauses red from the file are correctly formatted(if not it skips them)
+    and formats the remaining to simplify control
 
-    :returns: list of clauses without spaces
+    :returns: list of clauses
     '''
 
     f = open('../test/input.txt', mode='r', encoding='utf-8')
-    lines = [line.replace(' ', '') for line in f.read().splitlines()]
-    f.close()
-    lines = [s.upper() for s in lines]
-
-    return sort(checkStrings(lines))
-
-
-def checkStrings(clauses):
-    '''
-    checks that the clauses red from the file are correctly formatted
-    and removes them
-
-    :returns: formatted clauses
-    '''
-    rem = []
-    for idx in range(len(clauses)):
-        match = re.match('^(¬?(([A-Z]+[0-9]*)|¬?[A-Z]+[0-9]*(∨¬?[A-Z]+[0-9]*)*)∧)*¬?(([A-Z]+[0-9]*)|¬?[A-Z]+[0-9]*(∨¬?[A-Z]+[0-9]*)*)$', clauses[idx])
+    lines = []
+    count = 0
+    for line in f.read().splitlines():
+        count += 1
+        clause = line.replace(' ','').upper()
+        
+        # possible clause reduction regex: ^(¬?(([A-Z]+[0-9]*)|¬?[A-Z]+[0-9]*(∨¬?[A-Z]+[0-9]*)*)∧)*¬?(([A-Z]+[0-9]*)|¬?[A-Z]+[0-9]*(∨¬?[A-Z]+[0-9]*)*)$
+        match = re.match('^(¬?([0-9]|[A-Z])+∨)*¬?([0-9]|[A-Z])+$', clause)
         if match is None:
-            rem.append(idx)
-            print(f"String {idx} is improperly typed!")
+            print(f"String {count} is improperly typed!")
+        else:
+            clause = set(clause.split('∨'))
+            lines.append(clause)
+            
+    f.close()
 
-    # removing bad typed strings
-    for idx in rem[::-1]:
-        del clauses[idx]
-
-    return clauses
+    return sort(lines)
 
 
 def sort(clauses):
@@ -54,28 +46,23 @@ def sort(clauses):
     :returns: ordered list of clauses, list of unique literals
     '''
 
+    unique = set()
     sorted_clauses = []
-    unique = {}
-    for clause in clauses:
-        literals = 0
-        for idx,char in enumerate(clause):
-            if char.isalpha():
-                literals += 1
-                if clause[idx-1] == '¬':
-                    unique.add('¬' + char)
-                else:
-                    unique.add(char)
 
-        if len(sorted_clauses) == 0:
-            sorted_clauses.append([clause, literals, [None, None]])
-        else:
-            for idx,el in enumerate(sorted_clauses):
-                if el[1] >= literals:
-                    sorted_clauses.insert(idx, [clause, literals, [None, None]])
-                    break
-                elif idx == len(sorted_clauses)-1:
-                    sorted_clauses.append([clause, literals, [None, None]])
-                    break
+    for clause in clauses:
+        for literal in clause:
+            unique.add(literal)
+
+        inserted = False
+        literals = len(clause)
+        for idx, el in enumerate(sorted_clauses):
+            if len(el[0]) >= literals:
+                sorted_clauses.insert(idx, [clause, [None, None]])
+                inserted = True
+                break
+        
+        if not inserted:
+            sorted_clauses.append([clause, [None, None]])
 
     return sorted_clauses, unique
 
@@ -98,8 +85,8 @@ if __name__ == '__main__':
 
 
 ''' 
+TODO
 # IMPLEMENT DECISION HEURISTIC: VSIDS
 - Better output formatting
 - Try to get better management of explaining solution
-- Let propositions be either letter numbers both
 '''
