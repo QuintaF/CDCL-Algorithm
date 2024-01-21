@@ -112,6 +112,8 @@ def main():
         for key, value in model[:-1]:
             print(f'{key}: {value[0]},', end=" ")
         print(f'{model[-1][0]}: {model[-1][1][0]}', end=" ")
+    else:
+        print("The set of clauses is Unsatisfiable")
 
     return 0
 
