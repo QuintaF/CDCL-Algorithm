@@ -63,12 +63,12 @@ def cdcl_procedure(clauses, literals):
 
                 reason = clause[0]
                 trail.append((clause[1][0], reason))  # (implied_literal, reason)
-                print(' ⇒ propagation ⇒ ', end='')
+                print(' => propagation => ', end='')
                 state(trail, clauses)
 
             elif  truth_values[clause[1][0]][0] == 0:
                 # conflict
-                print(' ⇒ conflict ⇒ ', end='')
+                print(' => conflict => ', end='')
                 state(trail, clauses, conflict_clause = clause[0])
                 return fail(), None
         else:
@@ -78,7 +78,7 @@ def cdcl_procedure(clauses, literals):
     #check conflict
     conflict, cc = check_conflict(clauses, truth_values)
     if conflict:
-        print(' ⇒ conflict ⇒ ', end='')
+        print(' => conflict => ', end='')
         state(trail, clauses, conflict_clause = clauses[cc][0])
         return fail(), None
         
@@ -122,7 +122,7 @@ def cdcl_procedure(clauses, literals):
                 
             reason = clauses[clause][0]
             trail.append((implied_literal, reason)) 
-            print(' ⇒ propagation ⇒ ', end='')
+            print(' => propagation => ', end='')
             state(trail, clauses)
 
             # check conflicts via 2WL
@@ -160,7 +160,7 @@ def cdcl_procedure(clauses, literals):
                     break
 
             trail.append((literal, None))
-            print(' ⇒ decision ⇒ ', end='')
+            print(' => decision => ', end='')
             state(trail, clauses, learned_clauses = learned_clauses)
 
             # VSIDS decision
@@ -187,14 +187,14 @@ def cdcl_procedure(clauses, literals):
         '''
         
         if conflict:
-            print(' ⇒ conflict ⇒ ', end='')
+            print(' => conflict => ', end='')
             state(trail, clauses, learned_clauses = learned_clauses, conflict_clause = cc)
             if trail_level == 0:
                 return fail(), None
 
             # find 1UIP(Learning Heuristic)
             backjump_level, learn = first_unique_implication_point(truth_values, trail, cc)   
-            print(' ⇒ explain ⇒ ', end='')
+            print(' => explain => ', end='')
             if learn is None:
                 state(trail, clauses, learned_clauses= learned_clauses, conflict_clause= '□')
                 return fail(), None    
@@ -205,7 +205,7 @@ def cdcl_procedure(clauses, literals):
             Old and probably useless/ovecomplicated/ non efficient
             # 1 Explain 
             learn = explain(clauses, trail, cc)
-            print(' ⇒ explain ⇒ ', end='')
+            print(' => explain => ', end='')
             if learn is None:
                 state(trail, clauses, learned_clauses= learned_clauses, conflict_clause= '□')
                 return fail(), None
@@ -228,7 +228,7 @@ def cdcl_procedure(clauses, literals):
                         clauses.append([learn, [None, None]])
                         break
 
-            print(' ⇒ learn ⇒ ', end='')
+            print(' => learn => ', end='')
             state(trail, clauses, learned_clauses= learned_clauses, conflict_clause= learn)
                         
             # 3 Backjump
@@ -255,7 +255,7 @@ def cdcl_procedure(clauses, literals):
                     break;
             
             trail_level = backjump_level
-            print(' ⇒ backjump ⇒ ', end='')
+            print(' => backjump => ', end='')
             state(trail, clauses, learned_clauses= learned_clauses)
 
             # restores 2WL for the clauses
@@ -478,42 +478,10 @@ def explain(clauses, trail, conflict_clause):
 
         
         conflict_clause = conflict_clause + '∨' + oth_clause
-        conflict_clause = reduce(conflict_clause)
 
-    conflict_clause = reduce(conflict_clause)
     print(conflict_clause)
     print("\n")
     return conflict_clause
-
-
-def reduce(clause):
-    '''
-    eliminates literal duplicates from the clause
-    
-    :returns: clause without duplicates
-    '''
-
-    reduced = True
-    while reduced:
-        reduced = False
-        for idx,char in enumerate(clause):
-            if char.isalpha():
-                if clause[idx-1] == '¬':
-                    lit = '¬' + char
-                else:
-                    lit = char
-
-                #remove duplicates
-                bkp = len(clause)
-                clause = clause[:idx+1] + clause[idx+1:].replace('∨'+lit, '')
-                if bkp != len(clause):
-                    reduced = True
-                    break;
-
-                #remove tautologies
-                #if '∨'+lit in clause:
-
-    return clause
 
 
 def fail():
@@ -524,7 +492,7 @@ def fail():
     :returns: False(UNSAT)
     '''
 
-    print(' ⇒ fail ⇒ UNSAT')
+    print(' => fail => UNSAT')
     return False
 
 def success():
@@ -535,5 +503,5 @@ def success():
     :returns: True(SAT)
     '''
 
-    print(' ⇒ success ⇒ SAT')
+    print(' => success => SAT')
     return True

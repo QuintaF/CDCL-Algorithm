@@ -11,7 +11,7 @@ output: name.txt file
      'c mixed sat? no', 
      'c clause length = 3', 
      'c', 
-     'p cnf 20  91', 
+     'p cnf 20  91', #20 variables, 91 clauses
      '4 -18 19 0', 
      '3 18 -5 0', 
      '-5 -8 -15 0', 
@@ -23,12 +23,11 @@ import os, random
 def cnf_parser(sat):
 
     if sat == "SAT":
-        folder = 'UF250.2065.100/'
+        file = 'uf50-01000.cnf'
     else:
-        folder = 'UUF250.2065.100/'
+        file = 'uuf50-01000.cnf'
 
-    filepath = random.choice(os.listdir('main/test/' + folder))
-    f = open(filepath, mode='r', encoding='utf-8')
+    f = open('../test/cnf/'+ file, mode='r', encoding='utf-8')
 
     cnf = ['']
     for line in f.read().splitlines():    
@@ -44,9 +43,7 @@ def cnf_parser(sat):
 
     f.close()
 
-    with open('main/test/input.txt', mode = 'w', encoding='utf-8') as file:
+    with open('../test/input.txt', mode = 'w', encoding='utf-8') as file:
         for clause in cnf:
             file.write(clause+"\n")
-
-    return filepath
 

@@ -74,40 +74,44 @@ def sort(clauses):
 
 def main():
 
-    print("="*20)
+    print("="*40)
     print("STARTED")
 
     if args.cnf:
         # input read from a cnf file(first formatted by satlib_parser)
-        print("CNF file: " + str(cnf_parser(args.cnf)))
+        cnf_parser(args.cnf)
+
+
+    s = time.time()
+    clause_list, literals = get_lines()
+    e = time.time()
+    print(f"File parsing time: {e-s:0.3}")
+
+    print("EXECUTING CDCL ALGORITHM...")
+
     if not args.verbose:
         #outputs everything on terminal
         sys.stdout = open(os.devnull, 'w')
     if args.output:
         sys.stdout = open(args.output, 'w')
 
-    s = time.time()
-    clause_list, literals = get_lines()
-    e = time.time()
     print("Input clauses: " + str([c[0] for c in clause_list]))
     print("Unique literals: " + str(literals))
-    print("Starting Conflict-Driven Clause Learning procedure for satisfiability decision...\n")
-    
-
-    print(f"File parsing time: {e-s}")
-
-    print("EXECUTING CDCL ALGORITHM...")
     s = time.time()
-    satisfiable, values = cdcl(clause_list, literals)
+    satisfiable, model = cdcl(clause_list, literals)
     e = time.time()
     
     sys.stdout = sys.__stdout__
-    print(f"CDCL execution time: {e-s}")
+    print(f"CDCL execution time: {e-s:0.3}")
     print("clause learned: ")
-    print("="*20)
+    print("="*40)
 
     if satisfiable:
-        print(values)
+        print("The set of clauses is Satisfiable, here's a model:")
+        model = list(model.items())
+        for key, value in model[:-1]:
+            print(f'{key}: {value[0]},', end=" ")
+        print(f'{model[-1][0]}: {model[-1][1][0]}', end=" ")
 
     return 0
 
