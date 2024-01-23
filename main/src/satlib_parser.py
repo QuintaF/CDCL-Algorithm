@@ -23,9 +23,11 @@ import os, random
 def cnf_parser(sat):
 
     if sat == "SAT":
-        file = 'uf50-01000.cnf'
+        file = "uf50-01000.cnf"
+    elif sat == "UNSAT":
+        file = "uuf50-01000.cnf"
     else:
-        file = 'uuf50-01000.cnf'
+        file =  "ph" + str(sat) + ".cnf"
 
     f = open('../test/cnf/'+ file, mode='r', encoding='utf-8')
 

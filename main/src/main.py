@@ -75,43 +75,43 @@ def sort(clauses):
 def main():
 
     print("="*40)
-    print("STARTED")
+    print(" "*16 + "STARTED")
 
-    if args.cnf:
-        # input read from a cnf file(first formatted by satlib_parser)
-        cnf_parser(args.cnf)
-
-
+    # input reading from a cnf file(first formatted by satlib_parser)
     s = time.time()
+    if args.cnf:
+        cnf_parser(args.cnf)
+    elif args.pidgeonhole:
+        cnf_parser(args.pidgeonhole)
+
+    # file reading
     clause_list, literals = get_lines()
     e = time.time()
-    print(f"File parsing time: {e-s:0.3}")
-
-    print("EXECUTING CDCL ALGORITHM...")
-
-    if not args.verbose:
-        #outputs everything on terminal
-        sys.stdout = open(os.devnull, 'w')
-    if args.output:
-        sys.stdout = open(args.output, 'w')
-
-    print("Input clauses: " + str([c[0] for c in clause_list]))
+    print(f"File parsing: {e-s:0.3f} sec")
     print("Unique literals: " + str(literals))
+    print(" "*7 + "EXECUTING CDCL ALGORITHM...")
+
+    # call to CDCL algorithm
     s = time.time()
-    satisfiable, model = cdcl(clause_list, literals)
+    satisfiable, model, num_learned = cdcl(clause_list, literals, args)
     e = time.time()
     
-    sys.stdout = sys.__stdout__
-    print(f"CDCL execution time: {e-s:0.3}")
-    print("clause learned: ")
+    print(f"CDCL execution time: {e-s:0.3f} sec")
+    print(f"Learned clauses: {num_learned}")
     print("="*40)
 
     if satisfiable:
-        print("The set of clauses is Satisfiable, here's a model:")
-        model = list(model.items())
-        for key, value in model[:-1]:
-            print(f'{key}: {value[0]},', end=" ")
-        print(f'{model[-1][0]}: {model[-1][1][0]}', end=" ")
+        print("The set of clauses is Satisfiable")
+        # writing model
+        with open("../out/output.txt", 'w', encoding='utf-8') as file:
+            sys.stdout = file
+            model = list(model.items())
+            print("Model for the set of clauses: ")
+            for key, value in model:
+                if value[0] == 1:
+                    print(f'{key}: {value[0]}')
+
+            sys.stdout = sys.__stdout__
     else:
         print("The set of clauses is Unsatisfiable")
 
@@ -120,10 +120,3 @@ def main():
 if __name__ == '__main__':
     args = parse_args()
     main()
-
-''' 
-TODO
-# IMPLEMENT DECISION HEURISTIC: VSIDS
-- Better output formatting
-- Try to get better management of explaining solution
-'''

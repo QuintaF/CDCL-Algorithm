@@ -1,0 +1,2 @@
+Model for the set of clauses: 
+A: 1

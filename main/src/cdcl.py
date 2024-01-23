@@ -1,18 +1,19 @@
+import os
+import sys
 import copy
 
-def cdcl_procedure(clauses, literals):
+
+def cdcl_procedure(clauses, literals, args):
     '''
     Conflict-Driven Clause Learning procedure.
-    A method to decide isf a set of clauses is satisfiable(SAT) or unsatisfiable(UNSAT).
+    An algorithm to decide if a set of clauses is satisfiable(SAT) or unsatisfiable(UNSAT).
 
     Basic idea:
-        use resolution in order to generate a conflict clause(a clause where every literal its FALSE)
+        use resolution in order to generate a conflict clause(a clause where every literal is False)
     MODES
         - Search Mode:
-            - State: M || S
             - Transition Rules: Decision, (Unit)Propagation, Conflict, Success, Fail
         - Conflict Solving Mode:
-            - State: M || S || C
             - Transition Rules: Backtrack(Backjump), Learn
             - Forget *
             - Restart *
@@ -21,14 +22,25 @@ def cdcl_procedure(clauses, literals):
     UNSAT: empty clause generated or conflcit at level 0
     '''
 
+    if not args.verbose:
+        # stop terminal output
+        sys.stdout = open(os.devnull, 'w')
+    else:
+        # output in file
+        sys.stdout = open("../out/cdclsteps.txt", 'w', encoding='utf-8')
+
+    # clearing proof output file
+    open("../out/output.txt", 'w').close()
 
     learned_clauses = []
     trail_level = 0  # number of decisions
     trail = []  # tuples (implied literal, justification)
-    state(trail, clauses)
+    state(trail)
 
     # Truth values and VSIDS initialization
     truth_values = {literal:[None, 0, None] for literal in literals} # [value, VSIDS value, level_of_assignment]
+    literals = list(literals)
+    last_index = 0
 
     # initialize watched literals(2WL)
     for clause in clauses:
@@ -57,20 +69,21 @@ def cdcl_procedure(clauses, literals):
                     negated = '¬' + implied_literal
 
                 # if its negation is present set it to 0(False)
-                if negated in truth_values.keys():
+                if negated in literals:
                     truth_values[negated][0] = 0
                     truth_values[negated][2] = trail_level
 
                 reason = clause[0]
                 trail.append((clause[1][0], reason))  # (implied_literal, reason)
                 print(' => propagation => ', end='')
-                state(trail, clauses)
+                state(trail)
 
             elif  truth_values[clause[1][0]][0] == 0:
                 # conflict
                 print(' => conflict => ', end='')
-                state(trail, clauses, conflict_clause = clause[0])
-                return fail(), None
+                state(trail, conflict_clause = clause[0])
+                unsat_proof(trail, clause[0])
+                return fail(args), None, len(learned_clauses) 
         else:
             # no more unit clauses
             break
@@ -79,8 +92,9 @@ def cdcl_procedure(clauses, literals):
     conflict, cc = check_conflict(clauses, truth_values)
     if conflict:
         print(' => conflict => ', end='')
-        state(trail, clauses, conflict_clause = clauses[cc][0])
-        return fail(), None
+        state(trail, conflict_clause = clauses[cc][0])
+        unsat_proof(trail, clauses[cc][0])
+        return fail(args), None, len(learned_clauses) 
         
     clauses = cc
 
@@ -95,9 +109,10 @@ def cdcl_procedure(clauses, literals):
                 break
 
         if not unassigned:
-            return success(), truth_values 
+            return success(args), truth_values, len(learned_clauses) 
         
         conflict = False
+        cc = clauses
         propagated = False
 
         #CDCL procedure: propagation BCP
@@ -115,32 +130,38 @@ def cdcl_procedure(clauses, literals):
             else: 
                 negated = '¬' + implied_literal
                 
-            # if negation of the implied_literal exists set it to 0(False)
-            if negated in truth_values.keys():
-                truth_values[negated][0] = 0
-                truth_values[negated][2] = trail_level
-                
             reason = clauses[clause][0]
             trail.append((implied_literal, reason)) 
             print(' => propagation => ', end='')
-            state(trail, clauses)
+            state(trail)
 
-            # check conflicts via 2WL
-            conflict, cc = check_conflict(clauses, truth_values)
-
-            if conflict:
-                cc = clauses[cc][0]
-                break;
+            # if negation of the implied_literal exists set it to 0(False)
+            if negated in literals:
+                truth_values[negated][0] = 0
+                truth_values[negated][2] = trail_level
+                # check conflicts via 2WL
+                conflict, cc = check_conflict(clauses, truth_values)
+                if conflict:
+                    cc = clauses[cc][0]
+                    break;
+                else:
+                    clauses = cc
             
-            clauses = cc
             clause = check_propagation(clauses, truth_values)
 
-
-        #CDCL procedure: decision
+        #CDCL procedure: VSIDS decision
         if not propagated:
             trail_level += 1
+
+            if (len(learned_clauses) + 1) % 250 == 0:
+                decay(truth_values)
+                # sorting literals by VSIDS value    
+                literals = sorted(literals, key = lambda literal: truth_values[literal][1])[::-1]
+                last_index = 0
+
             literal = ''
-            for literal in truth_values.keys():
+            for last_index in range(last_index, len(literals)-1):
+                literal = literals[last_index]
                 if truth_values[literal][0] == None:
                     truth_values[literal][0] = 1
                     truth_values[literal][2] = trail_level
@@ -150,75 +171,46 @@ def cdcl_procedure(clauses, literals):
                     else:
                         negated = '¬' + literal
 
-                    if negated in truth_values.keys():
+                    if negated in literals:
                         truth_values[negated][0] = 0
                         truth_values[negated][2] = trail_level
                         conflict, cc = check_conflict(clauses, truth_values)
-
-                    if conflict:
-                        cc = clauses[cc][0]
-                    break
-
+                        if conflict:
+                            cc = clauses[cc][0]
+                        else:
+                            clauses = cc
+                    
+                    last_index += 1
+                    break;
+            
             trail.append((literal, None))
             print(' => decision => ', end='')
-            state(trail, clauses, learned_clauses = learned_clauses)
-
-            # VSIDS decision
-            '''
-            max_score = max(truth_values.values())
-            candidates = [var for var, score in self.scores.items() if score == max_score]
-            return random.choice(candidates)
-            
+            state(trail, learned_clauses = learned_clauses)
         
-            # Use VSDIS
-                # L_sum = #times L appears in the learned clauses
-                # Decaying sum:
-                #   - multiply sum by aplha in (0,1)
-                #   - increment bump K to add to the sum(baseic k +=1, recent weights more than older)
-            #trail_level += 1 
-                # WHEN TO INCREMENT?
-                def bump(self, variable):
-                    self.scores[variable] += 1
-
-                #WHEN TO DECAY ?
-                def decay(self, factor):
-                    for var in self.variables:
-                        self.scores[var] *= factor
-        '''
-        
+        # CDCL: conflict analyss
         if conflict:
             print(' => conflict => ', end='')
-            state(trail, clauses, learned_clauses = learned_clauses, conflict_clause = cc)
+            state(trail, learned_clauses = learned_clauses, conflict_clause = cc)
             if trail_level == 0:
-                return fail(), None
+                unsat_proof(trail, cc)
+                return fail(args), None, len(learned_clauses) 
 
-            # find 1UIP(Learning Heuristic)
+            # 1UIP(Learning Heuristic)
             backjump_level, learn = first_unique_implication_point(truth_values, trail, cc)   
-            print(' => explain => ', end='')
-            if learn is None:
-                state(trail, clauses, learned_clauses= learned_clauses, conflict_clause= '□')
-                return fail(), None    
-            
-            state(trail, clauses, learned_clauses = learned_clauses, conflict_clause= learn)   
+            print(' => explain => ', end='')  
+            state(trail, learned_clauses = learned_clauses, conflict_clause= learn)   
 
-            '''
-            Old and probably useless/ovecomplicated/ non efficient
-            # 1 Explain 
-            learn = explain(clauses, trail, cc)
-            print(' => explain => ', end='')
-            if learn is None:
-                state(trail, clauses, learned_clauses= learned_clauses, conflict_clause= '□')
-                return fail(), None
-            
-            state(trail, clauses, learned_clauses= learned_clauses, conflict_clause= learn)
-            '''
-            # 2 Learn
+            # Learn clause
             present = False
             for clause in clauses:
                 if learn in clause[0]:
                     present = True
 
             if not present:
+                # VSIDS: sum
+                for literal in learn:
+                    truth_values[literal][1] += 1
+
                 learned_clauses.append(learn)
                 for idx,el in enumerate(clauses):
                     if len(el[0]) >= len(learn):
@@ -227,16 +219,19 @@ def cdcl_procedure(clauses, literals):
                     elif idx == len(clauses)-1:
                         clauses.append([learn, [None, None]])
                         break
-
+                
             print(' => learn => ', end='')
-            state(trail, clauses, learned_clauses= learned_clauses, conflict_clause= learn)
-                        
-            # 3 Backjump
+            state(trail, learned_clauses= learned_clauses, conflict_clause= learn)
+
+            # Backjump
             # undo all assignments until the backjump level
             while True:
                 # undo assignment
                 step = trail.pop()
                 literal = step[0]
+
+                # VSIDS: return to first unassigned variable
+                last_index = min(last_index, literals.index(literal))
                 
                 if literal[0] == '¬':
                     negated = literal[1:]
@@ -246,7 +241,7 @@ def cdcl_procedure(clauses, literals):
                 level = truth_values[literal][2]
                 truth_values[literal][0] = None
                 truth_values[literal][2] = None
-                if negated in truth_values.keys():
+                if negated in literals:
                     truth_values[negated][0] = None
                     truth_values[negated][2] = None
 
@@ -256,7 +251,7 @@ def cdcl_procedure(clauses, literals):
             
             trail_level = backjump_level
             print(' => backjump => ', end='')
-            state(trail, clauses, learned_clauses= learned_clauses)
+            state(trail, learned_clauses= learned_clauses)
 
             # restores 2WL for the clauses
             # necessary in case of more than 1 conflict        
@@ -265,12 +260,13 @@ def cdcl_procedure(clauses, literals):
             clauses = cc
 
 
-def state(trail, clauses, learned_clauses = None, conflict_clause = None):
+def state(trail, learned_clauses = [], conflict_clause = None):
     '''
-    Prints the transitions until now.
+    prints the transitions state.
     '''
-
-    text = lambda learn, cc: f"{trail} || {[c[0] for c in clauses]}{' U ' + str(learn) if learn else ''}{' || ' + str(cc) if cc else ''}"
+    
+    steps = [step[0] for step in trail]
+    text = lambda learn, cc: f"{steps} || S{' U  L' if len(learn) > 0 else ''}{' || ' + str(cc) if cc else ''}"
     print(text(learned_clauses, conflict_clause), end='')
 
 
@@ -349,17 +345,31 @@ def search_watched_literal(clause, truth_values):
 
 def first_unique_implication_point(truth_values, trail, cc):
     '''
-    applies the 1UIP(aka First Assertion Clause) procedure to find the learn clause.
+    applies the 1UIP(aka First Assertion Clause) heuristic to find the learn clause, prints the resolution steps in the output file(main/out/output.txt).
     Procedure:
         - loop on trail backwards
-        - if literal assignment_level < conflict_level then stop
+        - if learned_clause is assertion_clause then return learned_clause
         - else if literal is in conflict_clause then:
-               . conflict_clause = resolve(conflict_clause, reason)
+               . resolution between conflict_clause and reason
                
     :returns: learn clause
     '''
+
+    try:
+        output_file = open("../out/output.txt", 'a', encoding='utf-8')
+        currout = sys.stdout
+        sys.stdout = output_file
+        print(f"Resolution steps:\n")
+        print(f"CC∨¬L   L∨D\n-----------\n    CC∨D\n")
+    except FileNotFoundError:
+        print("File does not exist")
+    except Exception as e:
+        print(f"An exception occurred when opening file {e}")
+
+    blank = 0  # resolution line offset
+
     learned = copy.deepcopy(cc)
-    conflict_level = truth_values[trail[-1][0]][2] # last literal on the trail generated the conflict
+    conflict_level = truth_values[trail[-1][0]][2]  # the last literal on the trail generates the conflict
 
     is_assertion, backjump_level = check_assertion(learned, truth_values, conflict_level)
     if is_assertion:
@@ -382,27 +392,38 @@ def first_unique_implication_point(truth_values, trail, cc):
             antecedent.remove(step[0])
 
             learned.remove(negated)
+            txt = f"{learned}∨{negated}        {literal}∨{antecedent}"
             learned = learned.union(antecedent)
+
+            # write resolution step in the file
+            print(txt)
+            print(' ' * blank, end='')
+            print("-" * len(txt))
+            blank += len(learned) + 3
+            print(' ' * blank, end='')
 
             is_assertion, backjump_level = check_assertion(learned, truth_values, conflict_level)
             if is_assertion:
+                # print final clause and restore standard output
+                print(f"{learned}\n")
+                sys.stdout = currout
+                output_file.close()
+
                 return backjump_level, learned
-
-    if len(learned) == 0:
-        return -1, None
-
-    return backjump_level, learned
 
 
 def check_assertion(clause, truth_values, conflict_level):
     '''
     checks if the clause generated by the 1UIP procedure
-    is an assertion clause(hence UIP)
+    is an assertion clause(UIP)
 
     :returns: True or False
     '''
+
+    # defined by the literal at the lowest level in the clause(conflict_level excluded)
+    backjump_level = 0  
+
     count = 0
-    backjump_level = 0
     for literal in clause:
         level = truth_values[literal][2]
         if level == conflict_level:
@@ -416,75 +437,69 @@ def check_assertion(clause, truth_values, conflict_level):
     return True, backjump_level
 
 
-def explain(clauses, trail, conflict_clause):
+def decay(truth_values):
     '''
-    Transforms the conflict clause into an 
-    assertion clause (i.e. cc where only one false literal at the current level)
-    
-    :returns: assertion literal or None if empty clause is generated
+    decaying sums for the VSIDS heuristic
+
+    :returns:
     '''
 
-    # take all trail steps until the first decision
-    explanation = []
-    for step in trail[::-1]:
-        if step[1] is None:
-            break;
-        explanation.append(step)
+    for values in truth_values.values():
+        values[1] /= 2
 
+
+def unsat_proof(trail, cc):
+    '''
+    a conflict happened at the lowest level (S ⊨ □).
+    prints on the output file the proof of unsatisfiability
+    as resolution steps
+    '''
     
-    print("\n\n")
+    try:
+        output_file = open("../out/output.txt", 'a', encoding='utf-8')
+        currout = sys.stdout
+        sys.stdout = output_file
+        print(f"Resolution steps:\n")
+    except FileNotFoundError:
+        print("File does not exist")
+    except Exception as e:
+        print(f"An exception occurred when opening file {e}")
+
     blank = 0
-    for step in explanation:
-        # explaination tree cycle 
-        oth_clause = step[1]
-                
-        print(conflict_clause + ' '*8 + oth_clause)
-
-        print(' ' * blank, end='')
-        print("-" * (len(conflict_clause)+8+len(oth_clause)))
-        blank += len(conflict_clause) + 2
-        print(' ' * blank, end='')
-
-        if '¬' in step[0]:
-            negated = step[0][1]
-            conflict_clause = conflict_clause[:2].replace(negated+'∨', '') + conflict_clause[2:].replace('∨'+negated, '')
-            oth_clause = oth_clause.replace('∨'+step[0], '')
-            oth_clause = oth_clause.replace(step[0]+'∨', '')
+    learned = cc
+    for step in trail[::-1]:
+        literal = step[0]
+        if literal[0] == '¬':
+            negated = literal[1:]
         else:
-            negated = '¬' + step[0]
-            conflict_clause = conflict_clause.replace('∨'+negated, '')
-            conflict_clause = conflict_clause.replace(negated+'∨', '')
-            oth_clause = oth_clause = oth_clause[:2].replace(step[0]+'∨', '') + oth_clause[2:].replace('∨'+step[0], '')
+            negated = '¬' + literal
+
+        if negated in learned:
+
+            # resolution(remove literal and keep others)
+            antecedent = copy.deepcopy(step[1])
+            antecedent.remove(step[0])
+
+            learned.remove(negated)
+            txt = f"{learned}∨{negated}        {literal}∨{antecedent}"
+            learned = learned.union(antecedent)
             
+            if len(learned) == 0:
+                txt = f"{negated}        {literal}"
 
-        if len(conflict_clause) + len(oth_clause) == 0:
-            print('□')
-            return None
-        elif len(conflict_clause) + len(oth_clause) == 1:
-            assertion_literal = max([conflict_clause, oth_clause],key=len)
-            if '¬' in assertion_literal:
-                negated = assertion_literal[1]
-            else:
-                negated = '¬' + assertion_literal
-            
-            if negated in clauses:
-                print(assertion_literal + ' '*8 + negated)
-                print("-" * (len(assertion_literal)+8+len(negated)))
-                print(' ' * (len(assertion_literal) + 2) + '□')
-                return None
-            else:
-                conflict_clause = assertion_literal
-                break
+            print(txt)
+            print(' ' * blank, end='')
+            print("-" * len(txt))
+            blank += len(learned) + 3
+            print(' ' * blank, end='')
 
-        
-        conflict_clause = conflict_clause + '∨' + oth_clause
-
-    print(conflict_clause)
-    print("\n")
-    return conflict_clause
+    # write empty clause and restore standard output
+    print(f"{' ' * len(negated)}□\n")
+    sys.stdout = currout
+    output_file.close()
 
 
-def fail():
+def fail(args):
     '''
     The resolution steps lead to a failure.
     The set of clauses is unsatisfiable
@@ -493,15 +508,28 @@ def fail():
     '''
 
     print(' => fail => UNSAT')
+    if args.verbose:
+        # close file
+        sys.stdout.close()
+    
+    
+    sys.stdout = sys.__stdout__
     return False
 
-def success():
+
+def success(args):
     '''
     The resolution steps lead to a success.
     The set of clauses is satisfiable
 
     :returns: True(SAT)
-    '''
-
+    '''    
+    
     print(' => success => SAT')
+
+    if args.verbose:
+        # close file
+        sys.stdout.close()
+
+    sys.stdout = sys.__stdout__
     return True
