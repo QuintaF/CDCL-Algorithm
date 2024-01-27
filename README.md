@@ -120,10 +120,53 @@ Here the SAT encoding for the different constraints:
 - $Row_v = \Lambda_{row=1}^{9}$ $\Lambda_{val=1}^{9}$ $[(row, 1, val), ..., (row, 9, val)]$, each row has all values
 - $Col_v = \Lambda_{col=1}^{9}$ $\Lambda_{val=1}^{9}$ $[(1, col, val), ..., (9, col, val)]$, each column has all values
 - $Block_v = \Lambda_{roff=1}^{3}$ $\Lambda_{coff=1}^{3}$ $\Lambda_{v=1}^{9}$ $V_{row=1}^{3}$ $V_{col=1}^{3}$ $(roff ∗ 3 + row, coff ∗ 3+col, val)$, each block has all values;
-- $Clues = \Lambda_{i=1}^{k}$ $(row, col, val)$, $k = \#clues$.
+- $Clues = \Lambda_{i=1}^{k}$ $(row, col, val)$, $k = initial clues$.
+
+Note that this is not an optimal decsription for the problem, in fact, based on the clues, some constraints become redundant. 
+
+### Sudoku Grid
+Clues             |  Solution
+:-------------------------:|:-------------------------:
+![Alt text](imgs/sudokuclues.JPG "sudoku clues")  |  ![Alt text](imgs/sudokusol.JPG "sudoku clues")
+
+Here the assignments to the positive literals in 'output.txt'(positive literals decide cell values):
+```
+| X118 X129 X136 | X144 X151 X167 | X175 X183 X192 |
+| X212 X221 X237 | X249 X255 X263 | X274 X288 X296 |
+| X314 X325 X333 | X346 X358 X362 | X371 X389 X397 |
+|----------------|----------------|----------------|
+| X411 X422 X438 | X445 X457 X469 | X476 X484 X493 |
+| X517 X523 X534 | X541 X556 X568 | X572 X585 X599 |
+| X619 X626 X635 | X643 X652 X664 | X677 X681 X698 |
+|----------------|----------------|----------------|
+| X716 X724 X739 | X742 X753 X765 | X778 X787 X791 |
+| X815 X827 X832 | X848 X859 X861 | X873 X886 X894 |
+| X913 X928 X931 | X947 X954 X966 | X979 X982 X995 |
+```
 
 ## Techniques implementation
 Fast overview on how various techniques have been implemented.
+
+### First Unique Implication point(1UIP)
+Procedure used if a conflit emerged after propagtion:
+
+1. while the conflict is not an assertion clause we remove steps from the trail;
+2. if we find a decision we continue, otherwise its a propagation step;
+3. if the propagated literal is in our conflict clause then we perform a resolution wiht the reason;
+
+The assertion clause is then learned.
+
+### Two Watched Literals(2WL)
+1. each clause has a list of 2 literals;
+2. after propagation/decision of a 0(False) we check the clauses that are "watching" that literal and look for another.
+
+Then there are 3 possible cases:
+
+- Found: change the watched literal;
+- Not Found: set watched to 'None'.
+- Not Found and Both None: the clause is a conflict clause
+
+We propagate clauses that are watching only 1 literal and we consider a conflict if the watched literals are both None.
 
 ### Variable State Independent Decaying Sum(VSIDS)
 1. each literal has a counter initialized to 0;

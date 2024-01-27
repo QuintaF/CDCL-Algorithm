@@ -192,18 +192,12 @@ def cdcl_procedure(clauses, literals):
             backjump_level, learn = first_unique_implication_point(truth_values, trail, cc)   
 
             # Learn clause
-            present = False
-            for clause in clauses:
-                if learn in clause[0]:
-                    present = True
+            # VSIDS: sum
+            for literal in learn:
+                truth_values[literal][1] += 1
 
-            if not present:
-                # VSIDS: sum
-                for literal in learn:
-                    truth_values[literal][1] += 1
-
-                learned_clauses += 1
-                clauses.insert(0,[learn, [None, None]])
+            learned_clauses += 1
+            clauses.insert(0,[learn, [None, None]])
 
             # Backjump
             # undo all assignments until the backjump level
@@ -271,7 +265,7 @@ def check_conflict(clauses, truth_values, negated):
     '''
 
     for idx,clause in enumerate(clauses):
-        if negated in clause[0]:
+        if negated in clause[1]:
             #search another literal
             new_watched = search_watched_literal(clause, truth_values)
 
