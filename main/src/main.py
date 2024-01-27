@@ -37,39 +37,27 @@ def get_lines(filename = '../test/input.txt'):
             print(f"String {count} is improperly typed!")
         else:
             clause = set(clause.split('∨'))
-            lines.append(clause)
+            lines.append([clause, [None, None]])
             
     f.close()
 
-    return sort(lines)
+    return unique(lines)
 
 
-def sort(clauses):
+def unique(clauses):
     '''
-    sorts clauses by number of literals
+    puts in a list every literal occurring in the clauses
 
-    :returns: ordered list of clauses, list of unique literals
+    :returns: list of clauses, list of unique literals
     '''
 
     unique = set()
-    sorted_clauses = []
 
     for clause in clauses:
-        for literal in clause:
+        for literal in clause[0]:
             unique.add(literal)
 
-        inserted = False
-        literals = len(clause)
-        for idx, el in enumerate(sorted_clauses):
-            if len(el[0]) >= literals:
-                sorted_clauses.insert(idx, [clause, [None, None]])
-                inserted = True
-                break
-        
-        if not inserted:
-            sorted_clauses.append([clause, [None, None]])
-
-    return sorted_clauses, unique
+    return clauses, unique
 
 
 def main():
@@ -79,21 +67,25 @@ def main():
 
     # input reading from a cnf file(first formatted by satlib_parser)
     s = time.time()
-    if args.cnf:
-        cnf_parser(args.cnf)
-    elif args.pidgeonhole:
-        cnf_parser(args.pidgeonhole)
+    cnf_parser(args)
 
     # file reading
-    clause_list, literals = get_lines()
+    if args.sudoku:
+        clause_list, literals = get_lines("../test/sudoku.txt")
+    else:
+        clause_list, literals = get_lines()
+    
+    # transforming the set into a list otherwise it would introduce randomness in the execution
+    literals = list(literals)
+    literals.sort()
     e = time.time()
-    print(f"File parsing: {e-s:0.3f} sec")
-    print("Unique literals: " + str(literals))
+
+    print(f"Preparation: {e-s:0.3f} sec")
     print(" "*7 + "EXECUTING CDCL ALGORITHM...")
 
     # call to CDCL algorithm
     s = time.time()
-    satisfiable, model, num_learned = cdcl(clause_list, literals, args)
+    satisfiable, model, num_learned = cdcl(clause_list, literals)
     e = time.time()
     
     print(f"CDCL execution time: {e-s:0.3f} sec")
@@ -102,14 +94,14 @@ def main():
 
     if satisfiable:
         print("The set of clauses is Satisfiable")
-        # writing model
+        # write model
         with open("../out/output.txt", 'w', encoding='utf-8') as file:
             sys.stdout = file
             model = list(model.items())
             print("Model for the set of clauses: ")
             for key, value in model:
                 if value[0] == 1:
-                    print(f'{key}: {value[0]}')
+                    print(f'{key}')
 
             sys.stdout = sys.__stdout__
     else:

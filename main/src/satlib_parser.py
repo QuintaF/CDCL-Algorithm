@@ -1,9 +1,5 @@
 '''
-this file creates a well formatted file from this library: https://www.cs.ubc.ca/~hoos/SATLIB/benchm.html
-put the cnf file inside test/ folder.
-
-input: name.cnf file
-output: name.txt file
+this file creates a well formatted file from this library: https://www.cs.ubc.ca/~hoos/SATLIB/benchm.html.
 
 #cnf example(',' is a newline in the cnf file): 
     ['c horn? no', 
@@ -17,34 +13,36 @@ output: name.txt file
      '-5 -8 -15 0', 
      '-20 7 -16 0']
 '''
-import os, random
 
+def cnf_parser(args):
 
-def cnf_parser(sat):
-
-    if sat == "SAT":
+    if args.custom:
+        file = "custom.cnf"
+    elif args.cnf == "SAT":
         file = "uf50-01000.cnf"
-    elif sat == "UNSAT":
+    elif args.cnf == "UNSAT":
         file = "uuf50-01000.cnf"
+    elif args.pidgeonhole:
+        file =  "ph" + str(args.pidgeonhole) + ".cnf"
     else:
-        file =  "ph" + str(sat) + ".cnf"
+        # no option, no parsing
+        return None
 
-    f = open('../test/cnf/'+ file, mode='r', encoding='utf-8')
+    #read file
+    with open('../test/cnf/'+ file, mode='r', encoding='utf-8') as f:
+        cnf = ['']
+        for line in f.read().splitlines():    
+            tokens = line.split()
+            if len(tokens) != 0 and tokens[0] not in ("p", "c", "%"):
+                for tok in tokens:
+                    if tok == '0':
+                        cnf[-1] = cnf[-1][:-1]
+                        cnf.append('')
+                    else:
+                        tok = tok.replace('-', '¬')
+                        cnf[-1] = cnf[-1] + tok +'∨'
 
-    cnf = ['']
-    for line in f.read().splitlines():    
-        tokens = line.split()
-        if len(tokens) != 0 and tokens[0] not in ("p", "c", "%"):
-            for tok in tokens:
-                if tok == '0':
-                    cnf[-1] = cnf[-1][:-1]
-                    cnf.append('')
-                else:
-                    tok = tok.replace('-', '¬')
-                    cnf[-1] = cnf[-1] + tok +'∨'
-
-    f.close()
-
+    # write in input file
     with open('../test/input.txt', mode = 'w', encoding='utf-8') as file:
         for clause in cnf:
             file.write(clause+"\n")
