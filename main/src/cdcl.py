@@ -139,10 +139,7 @@ def cdcl_procedure(clauses, literals):
                         truth_values[negated][0] = 0
                         truth_values[negated][2] = trail_level
                         conflict, cc = check_conflict(clauses, truth_values, negated = negated)
-                        if conflict:
-                            cc = clauses[cc][0]
-                        else:
-                            clauses = cc
+                        clauses = cc
                     
                     last_index += 1
                     break;
@@ -190,7 +187,7 @@ def cdcl_procedure(clauses, literals):
 
             # 1UIP(Learning Heuristic)
             backjump_level, learn = first_unique_implication_point(truth_values, trail, cc)   
-
+            
             # Learn clause
             # VSIDS: sum
             for literal in learn:
@@ -330,7 +327,7 @@ def first_unique_implication_point(truth_values, trail, cc):
     is_assertion, backjump_level = check_assertion(learned, truth_values, conflict_level)
     if is_assertion:
         return backjump_level, learned
-
+    
     for step in trail[::-1]:
         if step[1] is None:
             # decision

@@ -33,7 +33,7 @@ options:
                         reads input from 'custom.cnf'
 ```
 ### Multiple input options
-There is a priority set for *--custom*, *--pidgeonhole* and *--cnf* in the case they're used together in the same execution: first cehcked is *--custom*, if its not present then it chooses the *--cnf* instance and eventually the *--pidgeonhole* instance; if none is used it just reads the input file. Other informations about the DIMACS instances can be found in the respective files.
+There is a priority set for *--sudoku*, *--custom*, *--pidgeonhole* and *--cnf* in the case they're used together in the same execution: first cehcked is *--sudoku*, then *--custom*, if its not present then it chooses the *--cnf* instance and eventually the *--pidgeonhole* instance; if none is used it just reads the input file. Other informations about the DIMACS instances can be found in the respective files.
 
 ### Proof of unsatisfiability
 The proof is generated only for the resolution steps that brought to the generation of the empty clause, since wrting every learned clause would create a large file(and slow down the execution). Moreover the proof gets written only if the resolution is smaller than 50 steps.
@@ -83,14 +83,16 @@ Any string that doesn't match the regex is skipped and the execution starts with
 
 
 ## Some Benchmarks
-| Input File | Clauses | Literals | Result | Learned Clauses |  Time[s] |
-|:----------:|:-------:|:--------:|:------:|:---------------:|:--------:|
-|   ph5.txt  |    96   |    60    |  UNSAT |        126      |    0.130 |
-|   ph6.txt  |   133   |    70    |  UNSAT |        553      |    1.592 |
-|   ph7.txt  |   204   |    80    |  UNSAT |       2224      |   20.364 |
-|   ph8.txt  |   297   |    90    |  UNSAT |       4301      |   86.352 |
-|   ph9.txt  |   415   |   110    |  UNSAT |       9262      |  446.564 |
-| sudoku.txt |   3266  |   729    |   SAT  |      10041      | 1215.813 |
+| Input File | Clauses | Literals | Result  | Learned Clauses |  Time[s] |
+|:----------:|:-------:|:--------:|:-------:|:---------------:|:--------:|
+|   ph5.cnf  |    96   |    60    |  UNSAT  |        126      |    0.088 |
+|   ph6.cnf  |   133   |    70    |  UNSAT  |        553      |    1.037 |
+|   ph7.cnf  |   204   |    80    |  UNSAT  |       2224      |   12.484 |
+|   ph8.cnf  |   297   |    90    |  UNSAT  |       4301      |   51.640 |
+|   ph9.cnf  |   415   |   110    |  UNSAT  |       9262      |  245.804 |
+| sudoku.txt |   3266  |   729    |   SAT   |      10041      |  868.026 |
+
+For more challenging tests some instances from the [SAT competition benchmarks of 2009](http://www.satcompetition.org/) were approached. The algorithm has been left running for about 1.30 hours each, without terminating, and was then stopped.
 
 ## Sudoku instance
 Inspired by the CDCL project at [this URL](https://cse442-17f.github.io/Conflict-Driven-Clause-Learning/)(by Add Gritman, Anthony Ha, Tony Quach, Derek Wenger), 
@@ -180,4 +182,7 @@ To optimize the search we memorize the position of the last decided literal:
 - when backjumping the pointer is set to the earliest literal in the list that became unassigned. 
 
 ## References
-[1] Gary McGuire and Bastian Tugemann and Gilles Civario, "There is no 16-Clue Sudoku: Solving the Sudoku Minimum Number of Clues Problem" in https://arxiv.org/abs/1201.07492013.
+[1] Gary McGuire and Bastian Tugemann and Gilles Civario, "There is no 16-Clue Sudoku: Solving the Sudoku Minimum Number of Clues Problem" in https://arxiv.org/abs/1201.07492013.\
+[2] Lintao Zhang, Sharad Malik. Validating SAT solvers using an independent resolution-based
+checker: practical implementations and other applications. In Proceedings of the Conference
+on Design Automation and Test in Europe (DATE), IEEE, pages 10880–10885, 2003.
