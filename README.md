@@ -182,7 +182,8 @@ To optimize the search we memorize the position of the last decided literal:
 - when backjumping the pointer is set to the earliest literal in the list that became unassigned. 
 
 ## References
-[1] Gary McGuire and Bastian Tugemann and Gilles Civario, "There is no 16-Clue Sudoku: Solving the Sudoku Minimum Number of Clues Problem" in https://arxiv.org/abs/1201.07492013.\
+[1] Gary McGuire and Bastian Tugemann and Gilles Civario, "There is no 16-Clue Sudoku: Solving the Sudoku Minimum Number of Clues Problem" in https://arxiv.org/abs/1201.07492013.
+
 [2] Lintao Zhang, Sharad Malik. Validating SAT solvers using an independent resolution-based
 checker: practical implementations and other applications. In Proceedings of the Conference
 on Design Automation and Test in Europe (DATE), IEEE, pages 10880–10885, 2003.
