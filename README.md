@@ -92,7 +92,7 @@ Any string that doesn't match the regex is skipped and the execution starts with
 |   ph9.cnf  |   415   |   110    |  UNSAT  |       9262      |  245.804 |
 | sudoku.txt |   3266  |   729    |   SAT   |      10041      |  868.026 |
 
-For more challenging tests some instances from the [SAT competition benchmarks of 2009](http://www.satcompetition.org/) were approached. The algorithm has been left running for about 1.30 hours each, without terminating, and was then stopped.
+For more challenging tests some instances from the [SAT competition benchmarks of 2009](http://www.satcompetition.org/) were approached. The algorithm has been left running for about 1h30min each, without terminating, and was then stopped.
 
 ## Sudoku instance
 Inspired by the CDCL project at [this URL](https://cse442-17f.github.io/Conflict-Driven-Clause-Learning/)(by Add Gritman, Anthony Ha, Tony Quach, Derek Wenger), 
