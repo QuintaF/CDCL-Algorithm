@@ -13,7 +13,7 @@ Optional implementation:
 No optional requirement has been implemented in this version.
 
 ## Usage
-The program has been tested only on Python v.3.11.4.\
+The program has been tested on Python v.3.11.4.\
 To start the algorithm:
 ```
 usage: path/to/main.py [-h] [--pidgeonhole {5,6,7,8,9}] [--cnf {SAT,UNSAT}] [--sudoku] [--custom]
