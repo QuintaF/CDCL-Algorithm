@@ -37,7 +37,7 @@ def get_lines(filename = '../test/input.txt'):
             print(f"String {count} is improperly typed!")
         else:
             clause = set(clause.split('∨'))
-            lines.append([clause, [None, None]])
+            lines.append([list(clause), [None, None]])
             
     f.close()
 

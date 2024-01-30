@@ -283,25 +283,27 @@ def search_watched_literal(clause, truth_values):
     '''
     watched = [clause[1][0], clause[1][1]]
 
-    def search():
+    def search(pos):
         '''
         Looks for another literal that is not false 
 
         :returns: literal or None
         '''
 
-        for literal in clause[0]:
+        for pos in range(pos, len(clause[0])):
+            literal = clause[0][pos]
             if truth_values[literal][0] != 0 and literal not in watched:
-                return literal
+                return pos, literal
         
-        return None
-                    
+        return pos, None
+    
     # check watched literals
+    pos = 0
     for idx, literal in enumerate(watched):
         if literal is None:
-            watched[idx] = search()
+            pos, watched[idx] = search(pos)
         elif truth_values[literal][0] == 0:
-            watched[idx] = search()
+            pos, watched[idx] = search(pos)
 
     if watched[0] is None:
         return [watched[1], None]
@@ -343,8 +345,9 @@ def first_unique_implication_point(truth_values, trail, cc):
             # resolution(remove literal and keep others)
             antecedent = copy.deepcopy(step[1])
             antecedent.remove(step[0])
+
             learned.remove(negated)
-            learned = learned.union(antecedent)
+            learned = learned + [x for x in antecedent if x not in learned]
 
             is_assertion, backjump_level = check_assertion(learned, truth_values, conflict_level)
             if is_assertion:
@@ -421,7 +424,7 @@ def unsat_proof(trail, cc):
 
             learned.remove(negated)
             txt = f"{learned}∨{negated}        {literal}∨{antecedent}"
-            learned = learned.union(antecedent)
+            learned = learned + [x for x in antecedent if x not in learned]
             
             if len(learned) == 0:
                 txt = f"{negated}        {literal}"
