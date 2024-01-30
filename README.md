@@ -13,7 +13,7 @@ Optional implementation:
 No optional requirement has been implemented in this version.
 
 ## Usage
-The program has been tested only on Python v.3.11.4.\
+The program has been tested on Python v.3.11.4.\
 To start the algorithm:
 ```
 usage: path/to/main.py [-h] [--pidgeonhole {5,6,7,8,9}] [--cnf {SAT,UNSAT}] [--sudoku] [--custom]
@@ -92,7 +92,7 @@ Any string that doesn't match the regex is skipped and the execution starts with
 |   ph9.cnf  |   415   |   110    |  UNSAT  |       9262      |  245.804 |
 | sudoku.txt |   3266  |   729    |   SAT   |      10041      |  868.026 |
 
-For more challenging tests some instances from the [SAT competition benchmarks of 2009](http://www.satcompetition.org/) were approached. The algorithm has been left running for about 1.30 hours each, without terminating, and was then stopped.
+For more challenging tests some instances from the [SAT competition benchmarks of 2009](http://www.satcompetition.org/) were approached. The algorithm has been left running for about 1h30min each, without terminating, and was then stopped.
 
 ## Sudoku instance
 Inspired by the CDCL project at [this URL](https://cse442-17f.github.io/Conflict-Driven-Clause-Learning/)(by Add Gritman, Anthony Ha, Tony Quach, Derek Wenger), 
@@ -182,7 +182,8 @@ To optimize the search we memorize the position of the last decided literal:
 - when backjumping the pointer is set to the earliest literal in the list that became unassigned. 
 
 ## References
-[1] Gary McGuire and Bastian Tugemann and Gilles Civario, "There is no 16-Clue Sudoku: Solving the Sudoku Minimum Number of Clues Problem" in https://arxiv.org/abs/1201.07492013.\
+[1] Gary McGuire and Bastian Tugemann and Gilles Civario, "There is no 16-Clue Sudoku: Solving the Sudoku Minimum Number of Clues Problem" in https://arxiv.org/abs/1201.07492013.
+
 [2] Lintao Zhang, Sharad Malik. Validating SAT solvers using an independent resolution-based
 checker: practical implementations and other applications. In Proceedings of the Conference
 on Design Automation and Test in Europe (DATE), IEEE, pages 10880–10885, 2003.
